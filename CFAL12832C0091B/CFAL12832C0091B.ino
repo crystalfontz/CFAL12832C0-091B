@@ -47,11 +47,17 @@
 //
 //============================================================================
 #include <avr/io.h>
-#include <SPI.h>
-// C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src\SPI.cpp
-// C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src\SPI.h
+
 #include <avr/pgmspace.h>
 #include "bitmaps.h"
+
+//#define IFACE SPI
+#define IFACE I2C
+
+#if !defined IFACE
+  #error "You must define IFACE"
+#endif
+
 //============================================================================
 //
 // The CFAL12832C-0091B is a 3.3v device. You need a 3.3v Arduino or the
@@ -83,16 +89,20 @@
 #define CLR_SCK   (PORTB &= ~(0x20))
 #define SET_SCK   (PORTB |=  (0x20))
 //============================================================================
+#if IFACE == SPI
+  #include <SPI.h>
+#elif IFACE == I2C
+  #include <wire.h>
+#endif
+
 #define NUMBER_OF_SCREENS (3)
 
 const SCREEN_IMAGE *const screens[NUMBER_OF_SCREENS] PROGMEM=
-  {
+{
   &SPI_Logo,
   &I2C_Logo,
   &Batt_Volume
-  };
-
-
+};
 //============================================================================
 void sendcommand(uint8_t command)
 {
@@ -121,20 +131,17 @@ void senddata(uint8_t data)
 // Straight up code: ~1.3mS to update
 void show_128_x_4_bitmap(const SCREEN_IMAGE *OLED_image)
 {
-  uint8_t
-    column;
-  uint8_t
-    row;
-
-  for (row = 0; row < 4; row++)
+  for (uint8_t row = 0; row < 4; row++)
   {
-    sendcommand(0x00);      //lower column address
-    sendcommand(0x10);      //upper column address
+    //The following 3 commands should be sent before writing data to the display.
+    // Especially after turning off scrolling (if used)
+    sendcommand(0x00);        //lower column address
+    sendcommand(0x10);        //upper column address
     sendcommand(0xB0 + row);  //set page address
-    for (column = 0; column < 128; column++)
+    for (uint8_t column = 0; column < 128; column++)
     {
       //Read this byte from the program memory / flash
-      senddata(pgm_read_byte( &(OLED_image  ->bitmap_data[row][column]) ));
+      senddata( pgm_read_byte( &(OLED_image->bitmap_data[row][column]) ) );
     }
   }
 }
@@ -152,6 +159,8 @@ void show_128_x_4_bitmap(const SCREEN_IMAGE *OLED_image)
 
 //   for (row = 0; row < 4; row++)
 //   {
+//     The following 3 commands should be sent before writing data to the display.
+//     Especially after turning off scrolling (if used)
 //     sendcommand(0x00);      //lower column address
 //     sendcommand(0x10);      //upper column address
 //     sendcommand(0xB0 + row);  //set page address
@@ -330,4 +339,3 @@ void  loop(void)
 
 }
 //============================================================================
-
