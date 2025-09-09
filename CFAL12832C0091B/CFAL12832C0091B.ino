@@ -276,7 +276,7 @@ void Initialize_CFAL12832C(void)
 
   //Set Contrast Control / SEG Output Current / Iref
   sendcommand(SSD1306B_CONTRAST_PREFIX_81);
-  sendcommand(0xBF);  //magic # from factory
+  sendcommand(0x30);  //magic # from factory
 
   //Set precharge (low nibble) / discharge (high nibble) timing
   //precharge = 1 clock
@@ -339,3 +339,4 @@ void  loop(void)
 
 }
 //============================================================================
+
